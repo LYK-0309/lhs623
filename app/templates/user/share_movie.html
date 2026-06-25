@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}分享《{{ movie.title }}》给好友 - 影视影评分享系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- 影视信息卡片 -->
+            <div class="card shadow-sm mb-4">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        {% if movie.poster_url %}
+                        <img src="{{ movie.poster_url }}" class="img-fluid rounded-start" style="height:200px;object-fit:cover;width:100%;">
+                        {% else %}
+                        <div class="bg-secondary d-flex align-items-center justify-content-center" style="height:200px;">
+                            <i class="bi bi-film text-white" style="font-size:3rem;"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h4 class="card-title">{{ movie.title }}</h4>
+                            <p class="card-text text-muted">
+                                <i class="bi bi-tag"></i> {{ movie.category.name }}&nbsp;&nbsp;
+                                <i class="bi bi-star-fill text-warning"></i> {{ movie.rating }}/10
+                            </p>
+                            <p class="card-text">{{ (movie.intro[:100] if movie.intro else '暂无简介') }}...</p>
+                            <a href="{{ url_for('main.movie_detail', movie_id=movie.id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-box-arrow-up-right"></i> 查看详情
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 选择好友 -->
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-share"></i> 选择好友分享</h5>
+                </div>
+                <div class="card-body">
+                    {% if friend_list %}
+                    <div class="row">
+                        {% for f in friend_list %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        {% if f.avatar_url %}
+                                        <img src="{{ f.avatar_url }}" class="rounded-circle me-3" style="width:48px;height:48px;object-fit:cover;">
+                                        {% else %}
+                                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-3" style="width:48px;height:48px;">
+                                            <i class="bi bi-person-fill text-white"></i>
+                                        </div>
+                                        {% endif %}
+                                        <strong>{{ f.nickname }}</strong>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm btn-share" data-id="{{ f.id }}" data-name="{{ f.nickname }}">
+                                        <i class="bi bi-send"></i> 分享
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-people" style="font-size:3rem;"></i>
+                        <p class="mt-3">还没有好友，<a href="{{ url_for('user.friends') }}">去添加好友</a>吧！</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+    $('.btn-share').click(function() {
+        var btn = $(this);
+        var friendId = btn.data('id');
+        var friendName = btn.data('name');
+        if (!confirm('确定分享给 ' + friendName + ' 吗？')) return;
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+        $.ajax({
+            url: '{{ url_for("user.share_movie", movie_id=movie.id) }}',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ friend_id: friendId }),
+            success: function(data) {
+                if (data.success) {
+                    btn.removeClass('btn-primary').addClass('btn-success').html('<i class="bi bi-check"></i> 已分享');
+                    setTimeout(function() {
+                        btn.removeClass('btn-success').addClass('btn-primary').html('<i class="bi bi-send"></i> 分享').prop('disabled', false);
+                    }, 2000);
+                } else {
+                    alert(data.message || '分享失败');
+                    btn.prop('disabled', false).html('<i class="bi bi-send"></i> 分享');
+                }
+            },
+            error: function() {
+                alert('网络错误');
+                btn.prop('disabled', false).html('<i class="bi bi-send"></i> 分享');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

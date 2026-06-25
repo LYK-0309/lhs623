@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}个人资料 - 影评分享系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- 用户基本信息卡片 -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0"><i class="bi bi-person-gear"></i> 个人资料</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- 头像 -->
+                        <div class="col-md-4 text-center">
+                            {% if user.avatar_url %}
+                            <img src="{{ user.avatar_url }}" class="rounded-circle shadow" style="width:150px;height:150px;object-fit:cover;">
+                            {% else %}
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center shadow" style="width:150px;height:150px;">
+                                <i class="bi bi-person-fill text-white" style="font-size:4rem;"></i>
+                            </div>
+                            {% endif %}
+                            <div class="mt-2 text-muted small">
+                                {{ user.phone or user.email }}
+                            </div>
+                        </div>
+                        <!-- 修改资料表单 -->
+                        <div class="col-md-8">
+                            <form method="post" enctype="multipart/form-data" novalidate>
+                                {{ form.hidden_tag() }}
+
+                                <div class="mb-3">
+                                    {{ form.nickname.label(class="form-label") }}
+                                    {{ form.nickname(class="form-control" + (" is-invalid" if form.nickname.errors else "")) }}
+                                    {% for e in form.nickname.errors %}
+                                    <div class="invalid-feedback">{{ e }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.avatar.label(class="form-label") }}
+                                    {{ form.avatar(class="form-control" + (" is-invalid" if form.avatar.errors else ""), accept="image/*") }}
+                                    {% for e in form.avatar.errors %}
+                                    <div class="invalid-feedback">{{ e }}</div>
+                                    {% endfor %}
+                                    <div class="form-text">支持 png/jpg/jpeg/gif/webp，最大 2MB</div>
+                                </div>
+
+                                {{ form.submit(class="btn btn-primary") }}
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 修改密码卡片 -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-key"></i> 修改密码</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{{ url_for('user.change_password') }}" novalidate>
+                        {{ change_pwd_form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ change_pwd_form.old_password.label(class="form-label") }}
+                            {{ change_pwd_form.old_password(class="form-control", type="password") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ change_pwd_form.new_password.label(class="form-label") }}
+                            {{ change_pwd_form.new_password(class="form-control", type="password") }}
+                            <div class="form-text">8-15 位，不能包含空格</div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ change_pwd_form.confirm_password.label(class="form-label") }}
+                            {{ change_pwd_form.confirm_password(class="form-control", type="password") }}
+                        </div>
+
+                        {{ change_pwd_form.submit(class="btn btn-warning") }}
+                    </form>
+                </div>
+            </div>
+
+            <!-- 我的影评 -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots"></i> 我的影评</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.comments.count() > 0 %}
+                        {% for comment in user.comments[:10] %}
+                        <div class="border-bottom py-2">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ comment.movie.title }}</strong>
+                                <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <p class="mb-0 text-muted small">{{ comment.content[:100] }}...</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">还没有发表过影评，<a href="{{ url_for('main.index') }}">去看看吧</a>！</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 危险操作区 -->
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> 危险操作</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">永久注销账号将删除您的所有数据（个人信息、影评、好友关系），且无法恢复。</p>
+                    <a href="{{ url_for('user.delete_account') }}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i> 注销账号
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

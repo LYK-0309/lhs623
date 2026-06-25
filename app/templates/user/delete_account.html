@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}注销账号 - 影评分享系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> 注销账号</h4>
+                </div>
+                <div class="card-body p-4">
+
+                    <!-- 警告提示 -->
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading"><i class="bi bi-warning"></i> 不可逆操作！</h5>
+                        <p class="mb-1">注销账号将<strong>永久删除</strong>以下数据，且<strong>无法恢复</strong>：</p>
+                        <ul class="mb-0">
+                            <li>您的个人信息（昵称、头像、邮箱）</li>
+                            <li>您发表的所有影评</li>
+                            <li>您的好友关系</li>
+                        </ul>
+                    </div>
+
+                    <!-- 注销表单 -->
+                    <form method="post" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.password.label(class="form-label fw-bold") }}
+                            {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), type="password", placeholder="请输入当前密码") }}
+                            {% for e in form.password.errors %}
+                            <div class="invalid-feedback">{{ e }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.confirm_text.label(class="form-label fw-bold") }}
+                            {{ form.confirm_text(class="form-control" + (" is-invalid" if form.confirm_text.errors else ""), placeholder='请输入"确认注销"') }}
+                            <div class="form-text">请输入 <strong>确认注销</strong> 四个字以确认操作</div>
+                            {% for e in form.confirm_text.errors %}
+                            <div class="invalid-feedback">{{ e }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            {{ form.submit(class="btn btn-danger") }}
+                            <a href="{{ url_for('user.profile') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

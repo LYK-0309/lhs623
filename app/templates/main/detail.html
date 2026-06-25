@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+{% block title %}{{ movie.title }} - 影评分享系统{% endblock %}
+
+{% from "main/_pagination.html" import render_pagination %}
+
+{% block content %}
+<div class="container">
+    <!-- 影视详情卡片 -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4 col-lg-3">
+            {% if movie.poster_url %}
+            <img src="{{ movie.poster_url }}" class="img-fluid rounded shadow" alt="{{ movie.title }}">
+            {% else %}
+            <div class="bg-secondary rounded shadow d-flex align-items-center justify-content-center" style="height:400px;">
+                <i class="bi bi-film text-white" style="font-size:5rem;"></i>
+            </div>
+            {% endif %}
+            <!-- 操作按钮 -->
+            {% if current_user.is_authenticated %}
+            <button class="btn btn-outline-danger w-100 mt-3" id="like-btn" onclick="likeMovie()">
+                <i class="bi bi-hand-thumbs-up"></i> 点赞 <span id="like-count">{{ movie.likes }}</span>
+            </button>
+            <button class="btn btn-outline-primary w-100 mt-2" id="shareMovieDetailBtn">
+                <i class="bi bi-share"></i> 分享给好友
+            </button>
+            {% else %}
+            <button class="btn btn-outline-secondary w-100 mt-3" disabled onclick="alert('请先登录后再点赞');">
+                <i class="bi bi-hand-thumbs-up"></i> 点赞 <span id="like-count">{{ movie.likes }}</span>
+                <small class="d-block text-muted mt-1">登录后可使用点赞功能</small>
+            </button>
+            <a href="{{ url_for('user.login') }}" class="btn btn-outline-primary w-100 mt-2">
+                <i class="bi bi-share"></i> 分享给好友（请先登录）
+            </a>
+            {% endif %}
+        </div>
+        <div class="col-md-8 col-lg-9">
+            <h2 class="mb-2">{{ movie.title }}</h2>
+            <div class="mb-3">
+                {% if movie.category %}
+                <span class="badge bg-info me-1">{{ movie.category.name }}</span>
+                {% endif %}
+                {% if movie.rating %}
+                <span class="badge bg-warning text-dark">
+                    <i class="bi bi-star-fill"></i> {{ movie.rating }} 分
+                </span>
+                {% endif %}
+            </div>
+            <table class="table table-borderless">
+                <tbody>
+                    <tr>
+                        <td class="text-muted" style="width:100px;"><strong>主演</strong></td>
+                        <td>{{ movie.actors or '暂无信息' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>上映时间</strong></td>
+                        <td>{{ movie.release_date.strftime('%Y年%m月%d日') if movie.release_date else '暂无信息' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>上架时间</strong></td>
+                        <td>{{ movie.created_at.strftime('%Y-%m-%d') if movie.created_at else '暂无信息' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>影评数</strong></td>
+                        <td><i class="bi bi-chat-dots"></i> {{ movie.comments.count() }} 条</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h5 class="text-muted">简介</h5>
+            <p class="lead">{{ movie.intro or '暂无简介' }}</p>
+        </div>
+    </div>
+
+    <!-- 预告片 / 视频区域 -->
+    {% if movie.trailer_url %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white d-flex align-items-center">
+                    <i class="bi bi-play-circle-fill me-2 text-danger" style="font-size:1.2rem;"></i>
+                    <span class="fw-bold">预告片 / 视频片段</span>
+                    <span class="ms-auto">
+                        <span class="badge bg-secondary">
+                            {% if 'bilibili' in movie.trailer_url %}
+                            <i class="bi bi-play-btn"></i> 哔哩哔哩
+                            {% elif 'youtube' in movie.trailer_url %}
+                            <i class="bi bi-youtube"></i> YouTube
+                            {% else %}
+                            <i class="bi bi-camera-video"></i> 视频
+                            {% endif %}
+                        </span>
+                    </span>
+                </div>
+                <div class="card-body p-0 bg-black">
+                    <div class="ratio ratio-16x9">
+                        <iframe
+                            src="{{ movie.trailer_url }}"
+                            scrolling="no"
+                            border="0"
+                            frameborder="no"
+                            framespacing="0"
+                            allowfullscreen="true"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            style="border-radius:0 0 8px 8px;">
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 影评区域 -->
+    <div class="row g-4">
+        <!-- 发表影评 -->
+        <div class="col-lg-4 order-lg-2">
+            <div class="card shadow-sm sticky-top" style="top:80px;">
+                <div class="card-header fw-bold">
+                    <i class="bi bi-pencil-square"></i> 发表影评
+                </div>
+                <div class="card-body">
+                    {% if current_user.is_authenticated %}
+                    <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+                        {% if current_user.avatar_url %}
+                        <img src="{{ current_user.avatar_url }}" class="rounded-circle me-2" style="width:36px;height:36px;object-fit:cover;">
+                        {% else %}
+                        <i class="bi bi-person-circle me-2" style="font-size:1.8rem;"></i>
+                        {% endif %}
+                        <span class="fw-bold">{{ current_user.nickname }}</span>
+                        <small class="text-muted ms-auto">已登录</small>
+                    </div>
+                    <form id="comment-form" method="post" action="{{ url_for('main.post_comment', movie_id=movie.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ comment_form.movie_id }}
+                        <div class="mb-3">
+                            {{ comment_form.content.label(class="form-label") }}
+                            {{ comment_form.content(class="form-control", rows="4", placeholder="分享你的观影感受...") }}
+                            <div class="invalid-feedback" id="content-error"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-send"></i> 发表影评
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-person-lock display-4 text-muted"></i>
+                        <p class="mt-2 mb-3">请先登录后再发表影评</p>
+                        <a href="{{ url_for('user.login') }}" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-in-right"></i> 立即登录
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 影评列表 -->
+        <div class="col-lg-8 order-lg-1">
+            <h4 class="mb-3">
+                <i class="bi bi-chat-dots"></i> 影评
+                <span class="badge bg-secondary ms-1">{{ pagination.total if pagination else 0 }}</span>
+            </h4>
+
+            <div id="comments-container">
+                {% if comments %}
+                {% for comment in comments %}
+                <div class="card mb-3 comment-card" id="comment-{{ comment.id }}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center">
+                                {% if comment.user and comment.user.avatar_url %}
+                                <img src="{{ comment.user.avatar_url }}" class="rounded-circle me-2" style="width:36px;height:36px;object-fit:cover;">
+                                {% elif comment.user %}
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;font-size:0.9rem;">
+                                    {{ comment.user.nickname[0] }}
+                                </div>
+                                {% else %}
+                                <i class="bi bi-person-circle me-2" style="font-size:1.8rem;"></i>
+                                {% endif %}
+                                <div>
+                                    <strong>
+                                        {% if comment.user %}
+                                        {{ comment.user.nickname }}
+                                        {% else %}
+                                        {{ comment.author }}
+                                        {% endif %}
+                                    </strong>
+                                    {% if comment.user %}
+                                    <span class="badge bg-success ms-1" style="font-size:0.7rem;">已认证</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <p class="card-text">{{ comment.content }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-chat-square-text display-4"></i>
+                    <p class="mt-2">还没有影评，快来发表第一条吧！</p>
+                </div>
+                {% endif %}
+            </div>
+
+            {{ render_pagination(pagination, 'main.detail', movie_id=movie.id) }}
+        </div>
+    </div>
+</div>
+
+<!-- 分享影视到好友聊天 Modal -->
+<div class="modal fade" id="shareMovieDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-share"></i> 分享《{{ movie.title }}》给好友</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="friendListContainer">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary"></div>
+                        <p class="mt-3 text-muted">正在加载好友列表...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// AJAX 发表影评
+document.getElementById('comment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var form = this;
+    var submitBtn = form.querySelector('button[type="submit"]');
+    var errorDiv = document.getElementById('content-error');
+    errorDiv.style.display = 'none';
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 提交中...';
+
+    var formData = new FormData(form);
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: formData
+    })
+    .then(function(response) {
+        if (response.status === 401) {
+            // 未授权，提示登录
+            alert('请先登录后再发表影评');
+            window.location.href = '{{ url_for("user.login") }}';
+            return;
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        if (data && data.success) {
+            // 在最顶部插入新评论
+            var container = document.getElementById('comments-container');
+            var emptyMsg = container.querySelector('.text-center');
+            if (emptyMsg) emptyMsg.remove();
+
+            var html = '<div class="card mb-3 comment-card" id="comment-' + data.comment.id + '">' +
+                '<div class="card-body">' +
+                '<div class="d-flex justify-content-between align-items-center mb-2">' +
+                '<strong><i class="bi bi-person-circle"></i> ' + data.comment.author + '</strong>' +
+                '<small class="text-muted">' + data.comment.created_at + '</small>' +
+                '</div>' +
+                '<p class="card-text">' + data.comment.content + '</p>' +
+                '</div></div>';
+
+            container.insertAdjacentHTML('afterbegin', html);
+
+            // 清空表单
+            form.querySelector('textarea').value = '';
+
+            // 更新评论数
+            var countBadge = document.querySelector('h4 .badge');
+            if (countBadge) {
+                countBadge.textContent = parseInt(countBadge.textContent) + 1;
+            }
+
+            // 短暂提示
+            var alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-2';
+            alert.innerHTML = data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+            form.parentNode.insertBefore(alert, form);
+            setTimeout(function() { alert.remove(); }, 3000);
+        } else if (data) {
+            if (data.errors && data.errors.content) {
+                errorDiv.textContent = data.errors.content[0];
+                errorDiv.style.display = 'block';
+            }
+        }
+    })
+    .catch(function(err) {
+        alert('网络错误，请稍后重试');
+    })
+    .finally(function() {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-send"></i> 发表影评';
+    });
+});
+
+// 点赞功能
+function likeMovie() {
+    var btn = document.getElementById('like-btn');
+    btn.disabled = true;
+    fetch('{{ url_for("main.like_movie", movie_id=movie.id) }}', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(function(r) {
+        if (r.status === 401) {
+            // 未授权，提示登录
+            alert('请先登录后再点赞');
+            window.location.href = '{{ url_for("user.login") }}';
+            return;
+        }
+        return r.json();
+    })
+    .then(function(data) {
+        if (data && data.success) {
+            document.getElementById('like-count').textContent = data.likes;
+            btn.classList.add('btn-danger');
+            btn.classList.remove('btn-outline-danger');
+            setTimeout(function() {
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-outline-danger');
+            }, 300);
+        }
+    })
+    .catch(function(err) {
+        alert('网络错误，请稍后重试');
+    })
+    .finally(function() { btn.disabled = false; });
+}
+
+// ========== 分享影视到好友聊天 ==========
+(function() {
+    var shareBtn = document.getElementById('shareMovieDetailBtn');
+    if (!shareBtn) return;
+
+    var friendListContainer = document.getElementById('friendListContainer');
+    var shareModal = document.getElementById('shareMovieDetailModal');
+    if (!shareModal) return;
+    var bsModal = new bootstrap.Modal(shareModal);
+
+    // 打开 Modal 时加载好友列表
+    shareBtn.addEventListener('click', function() {
+        bsModal.show();
+        loadFriendList();
+    });
+
+    function loadFriendList() {
+        friendListContainer.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-3 text-muted">正在加载好友列表...</p></div>';
+
+        fetch('/user/friends/accepted')
+            .then(function(r) {
+                if (!r.ok) {
+                    if (r.status === 401 || r.status === 302) {
+                        throw new Error('LOGIN_REQUIRED');
+                    }
+                    throw new Error('HTTP ' + r.status);
+                }
+                return r.json();
+            })
+            .then(function(data) {
+                if (!data.success) {
+                    friendListContainer.innerHTML = '<div class="text-center py-5 text-danger"><i class="bi bi-exclamation-circle" style="font-size:2rem;"></i><p class="mt-2">加载失败，请重试</p></div>';
+                    return;
+                }
+                if (!data.friends || data.friends.length === 0) {
+                    friendListContainer.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-people" style="font-size:3rem;"></i><p class="mt-3">还没有好友，<a href="/user/friends">去添加好友</a>吧！</p></div>';
+                    return;
+                }
+
+                var html = '<div class="row g-3">';
+                data.friends.forEach(function(f) {
+                    var avatarHtml = f.avatar_url
+                        ? '<img src="' + f.avatar_url + '" class="rounded-circle" style="width:48px;height:48px;object-fit:cover;">'
+                        : '<div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:48px;height:48px;"><i class="bi bi-person-fill text-white"></i></div>';
+
+                    html += '<div class="col-md-6"><div class="card friend-share-card h-100" data-friend-id="' + f.id + '" data-friend-name="' + escapeAttr(f.nickname) + '" style="cursor:pointer;"><div class="card-body d-flex align-items-center">' +
+                        avatarHtml +
+                        '<div class="ms-3 flex-grow-1" style="min-width:0;">' +
+                        '<div class="fw-bold text-truncate">' + escapeHtml(f.nickname) + '</div>' +
+                        (f.email ? '<div class="text-muted small text-truncate">' + escapeHtml(f.email) + '</div>' : '') +
+                        '</div>' +
+                        '<div class="ms-2 text-primary"><i class="bi bi-send-fill"></i></div>' +
+                        '</div></div></div>';
+                });
+                html += '</div>';
+                friendListContainer.innerHTML = html;
+            })
+            .catch(function(err) {
+                if (err.message === 'LOGIN_REQUIRED') {
+                    friendListContainer.innerHTML = '<div class="text-center py-5 text-warning"><i class="bi bi-person-lock" style="font-size:2rem;"></i><p class="mt-2">登录已过期，<a href="/user/login">请重新登录</a></p></div>';
+                } else {
+                    friendListContainer.innerHTML = '<div class="text-center py-5 text-danger"><i class="bi bi-exclamation-circle" style="font-size:2rem;"></i><p class="mt-2">网络错误(' + err.message + ')，<a href="javascript:loadFriendList()">点击重试</a></p></div>';
+                }
+            });
+    }
+
+    // 点击好友卡片分享
+    friendListContainer.addEventListener('click', function(e) {
+        var card = e.target.closest('.friend-share-card');
+        if (!card) return;
+
+        var friendId = card.dataset.friendId;
+        var friendName = card.dataset.friendName;
+        if (!confirm('确定将《{{ movie.title }}》分享给「' + friendName + '」吗？')) return;
+
+        card.style.opacity = '0.5';
+        card.style.pointerEvents = 'none';
+
+        fetch('/user/friends/share-movie/' + friendId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ movie_id: {{ movie.id }} })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                card.querySelector('.text-primary').outerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i></span>';
+                setTimeout(function() {
+                    bsModal.hide();
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = '';
+                }, 800);
+            } else {
+                alert(data.message || '分享失败');
+                card.style.opacity = '1';
+                card.style.pointerEvents = '';
+            }
+        })
+        .catch(function() {
+            alert('网络错误，分享失败');
+            card.style.opacity = '1';
+            card.style.pointerEvents = '';
+        });
+    });
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    function escapeAttr(str) {
+        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+})();
+</script>
+{% endblock %}

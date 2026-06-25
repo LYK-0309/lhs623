@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}用户登录 - 影评分享系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-5">
+            <div class="card shadow mt-5">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0"><i class="bi bi-box-arrow-in-right"></i> 用户登录</h4>
+                </div>
+                <div class="card-body p-4">
+
+                    <!-- 标签页切换 -->
+                    <ul class="nav nav-pills nav-fill mb-4" id="loginTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if active_tab != 'code' %}active{% endif %}"
+                                    id="password-tab" data-bs-toggle="pill"
+                                    data-bs-target="#password-pane" type="button" role="tab">
+                                <i class="bi bi-lock"></i> 密码登录
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if active_tab == 'code' %}active{% endif %}"
+                                    id="code-tab" data-bs-toggle="pill"
+                                    data-bs-target="#code-pane" type="button" role="tab">
+                                <i class="bi bi-envelope-check"></i> 验证码登录
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="loginTabContent">
+
+                        <!-- 密码登录 -->
+                        <div class="tab-pane fade {% if active_tab != 'code' %}show active{% endif %}"
+                             id="password-pane" role="tabpanel">
+                            <form method="post" action="{{ url_for('user.login') }}" novalidate>
+                                {{ form.hidden_tag() }}
+
+                                <div class="mb-3">
+                                    {{ form.email.label(class="form-label") }}
+                                    {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""),
+                                        placeholder="请输入 QQ 邮箱") }}
+                                    {% for e in form.email.errors %}
+                                    <div class="invalid-feedback">{{ e }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.password.label(class="form-label") }}
+                                    {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""),
+                                        placeholder="请输入密码", type="password") }}
+                                    {% for e in form.password.errors %}
+                                    <div class="invalid-feedback">{{ e }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input"
+                                               name="remember" id="remember_pwd" value="1">
+                                        <label class="form-check-label" for="remember_pwd">记住我（7天）</label>
+                                    </div>
+                                    <a href="{{ url_for('user.forgot_password') }}" class="small text-muted">
+                                        忘记密码？
+                                    </a>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                    <i class="bi bi-box-arrow-in-right"></i> 登录
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- 验证码登录 -->
+                        <div class="tab-pane fade {% if active_tab == 'code' %}show active{% endif %}"
+                             id="code-pane" role="tabpanel">
+                            {% if not mail_enabled %}
+                            <div class="alert alert-info mb-3" id="demo-mode-alert">
+                                <i class="bi bi-info-circle"></i> 当前为演示模式，验证码将直接显示在页面上（未发送邮件）。
+                            </div>
+                            {% endif %}
+                            <!-- 演示模式：显示验证码的区域 -->
+                            <div id="demo-code-display" class="d-none mb-3">
+                                <div class="alert alert-success mb-0">
+                                    <strong><i class="bi bi-key"></i> 您的验证码：</strong>
+                                    <span id="demo-code-value" style="font-size:1.5rem;font-weight:bold;letter-spacing:0.5rem;color:#d63384;"></span>
+                                    <br><small class="text-muted">（演示模式：请将此验证码填入下方输入框）</small>
+                                </div>
+                            </div>
+                            <form method="post" action="{{ url_for('user.code_login') }}" novalidate>
+                                {{ code_form.hidden_tag() }}
+
+                                <div class="mb-3">
+                                    {{ code_form.email.label(class="form-label") }}
+                                    {{ code_form.email(class="form-control" + (" is-invalid" if code_form.email.errors else ""),
+                                        placeholder="请输入邮箱地址", id="code_login_email") }}
+                                    {% for e in code_form.email.errors %}
+                                    <div class="invalid-feedback">{{ e }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ code_form.verification_code.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ code_form.verification_code(
+                                            class="form-control" + (" is-invalid" if code_form.verification_code.errors else ""),
+                                            placeholder="6 位验证码", id="code_login_vc",
+                                            autocomplete="one-time-code") }}
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                id="btn_login_code"
+                                                onclick="sendCode('code_login_email','btn_login_code','login')">
+                                            获取验证码
+                                        </button>
+                                    </div>
+                                    {% for e in code_form.verification_code.errors %}
+                                    <div class="text-danger small mt-1">{{ e }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input"
+                                           name="remember" id="remember_code" value="1">
+                                    <label class="form-check-label" for="remember_code">记住我（7天）</label>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                    <i class="bi bi-envelope-check"></i> 验证码登录
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            还没有账号？<a href="{{ url_for('user.register') }}">立即注册</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function sendCode(emailId, btnId, purpose) {
+    var email = document.getElementById(emailId).value.trim();
+    var btn   = document.getElementById(btnId);
+    if (!email) { alert('请先填写邮箱地址'); return; }
+    // 支持任意邮箱格式（不再限制仅QQ邮箱）
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) { alert('请输入正确的邮箱地址'); return; }
+
+    btn.disabled = true;
+    btn.textContent = '发送中...';
+
+    var formData = new FormData();
+    formData.append('email', email);
+    formData.append('purpose', purpose);
+    formData.append('csrf_token', document.querySelector('[name=csrf_token]').value);
+
+    fetch('{{ url_for("user.request_code") }}', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // 演示模式：直接在页面上显示验证码
+                if (data.demo_mode && data.debug_code) {
+                    var display = document.getElementById('demo-code-display');
+                    var codeVal = document.getElementById('demo-code-value');
+                    if (display && codeVal) {
+                        codeVal.textContent = data.debug_code;
+                        display.classList.remove('d-none');
+                        // 自动填入验证码
+                        document.getElementById('code_login_vc').value = data.debug_code;
+                    }
+                }
+
+                var sec = 60;
+                var t = setInterval(function() {
+                    btn.textContent = sec + 's 后重发';
+                    sec--;
+                    if (sec < 0) {
+                        clearInterval(t);
+                        btn.disabled = false;
+                        btn.textContent = '获取验证码';
+                    }
+                }, 1000);
+
+                // 显示提示信息
+                if (!data.demo_mode) {
+                    alert(data.message || '验证码已发送到您的邮箱，请查收');
+                }
+            } else {
+                alert(data.message || '发送失败，请稍后重试');
+                btn.disabled = false;
+                btn.textContent = '获取验证码';
+            }
+        })
+        .catch(function() {
+            alert('网络错误，请重试');
+            btn.disabled = false;
+            btn.textContent = '获取验证码';
+        });
+}
+</script>
+{% endblock %}

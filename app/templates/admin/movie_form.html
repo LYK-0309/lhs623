@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - 管理后台{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <a href="{{ url_for('admin.movie_list') }}" class="btn btn-sm btn-outline-secondary me-2">
+                            <i class="bi bi-arrow-left"></i>
+                        </a>
+                        {{ title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {{ form.hidden_tag() }}
+                        <div class="row g-3">
+                            <div class="col-12">
+                                {{ form.title.label(class="form-label") }}
+                                {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""), placeholder="请输入影视名称") }}
+                                {% for error in form.title.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.category_id.label(class="form-label") }}
+                                {{ form.category_id(class="form-select" + (" is-invalid" if form.category_id.errors else "")) }}
+                                {% for error in form.category_id.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.rating.label(class="form-label") }}
+                                {{ form.rating(class="form-control" + (" is-invalid" if form.rating.errors else ""), placeholder="0-10分", step="0.1") }}
+                                {% for error in form.rating.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.actors.label(class="form-label") }}
+                                {{ form.actors(class="form-control" + (" is-invalid" if form.actors.errors else ""), placeholder="多个主演用逗号分隔") }}
+                                {% for error in form.actors.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.release_date.label(class="form-label") }}
+                                {{ form.release_date(class="form-control" + (" is-invalid" if form.release_date.errors else ""), placeholder="YYYY-MM-DD", type="date") }}
+                                {% for error in form.release_date.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-12">
+                                {{ form.poster_url.label(class="form-label") }}
+                                {{ form.poster_url(class="form-control" + (" is-invalid" if form.poster_url.errors else ""), placeholder="输入海报图片URL（可选）") }}
+                                {% for error in form.poster_url.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-12">
+                                {{ form.trailer_url.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.trailer_url(class="form-control" + (" is-invalid" if form.trailer_url.errors else ""), id="trailer_url_input", placeholder="Bilibili: //player.bilibili.com/player.html?bvid=BVxxx   或 YouTube: //www.youtube.com/embed/xxxxx") }}
+                                    <button type="button" class="btn btn-outline-info" onclick="previewTrailer()">
+                                        <i class="bi bi-play-circle"></i> 预览
+                                    </button>
+                                </div>
+                                {% for error in form.trailer_url.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                                <div class="form-text text-muted">
+                                    支持 Bilibili 嵌入（<code>//player.bilibili.com/player.html?bvid=BV...</code>）
+                                    或 YouTube 嵌入（<code>//www.youtube.com/embed/...</code>）格式
+                                </div>
+                                <!-- 预览区域 -->
+                                <div id="trailer-preview" class="mt-2" style="display:none;">
+                                    <iframe id="trailer-preview-frame" src="" width="100%" height="280"
+                                            scrolling="no" border="0" frameborder="no"
+                                            framespacing="0" allowfullscreen="true"
+                                            style="border-radius:8px;"></iframe>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                {{ form.intro.label(class="form-label") }}
+                                {{ form.intro(class="form-control" + (" is-invalid" if form.intro.errors else ""), rows="5", placeholder="请输入影视简介...") }}
+                                {% for error in form.intro.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg"></i> {{ form.submit.label.text }}
+                                </button>
+                                <a href="{{ url_for('admin.movie_list') }}" class="btn btn-outline-secondary">取消</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewTrailer() {
+    var url = document.getElementById('trailer_url_input').value.trim();
+    if (!url) { alert('请先输入预告片URL'); return; }
+    var preview = document.getElementById('trailer-preview');
+    var frame = document.getElementById('trailer-preview-frame');
+    frame.src = url;
+    preview.style.display = 'block';
+    preview.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}
+

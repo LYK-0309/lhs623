@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}影评分享系统 - 首页{% endblock %}
+
+{% from "main/_pagination.html" import render_pagination %}
+
+{% block content %}
+<div class="container">
+    <!-- 分类筛选 -->
+    <div class="mb-4">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a href="{{ url_for('main.index') }}" class="btn btn-sm {{ 'btn-primary' if not current_category else 'btn-outline-primary' }}">
+                全部
+            </a>
+            {% for cat in categories %}
+            <a href="{{ url_for('main.index', category=cat.id) }}" class="btn btn-sm {{ 'btn-primary' if current_category == cat.id else 'btn-outline-primary' }}">
+                {{ cat.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 搜索结果提示 -->
+    {% if keyword %}
+    <div class="alert alert-info">
+        搜索「<strong>{{ keyword }}</strong>」的结果，共找到 <strong>{{ pagination.total if pagination else 0 }}</strong> 部影视
+        <a href="{{ url_for('main.index') }}" class="alert-link ms-2">清除搜索</a>
+    </div>
+    {% endif %}
+
+    <!-- 影视列表 -->
+    {% if movies %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for movie in movies %}
+        <div class="col">
+            <div class="card h-100 shadow-sm movie-card">
+                <div class="movie-poster-wrapper">
+                    {% if movie.poster_url %}
+                    <img src="{{ movie.poster_url }}" class="card-img-top movie-poster" alt="{{ movie.title }}" loading="lazy">
+                    {% else %}
+                    <div class="card-img-top movie-poster-placeholder d-flex align-items-center justify-content-center bg-secondary">
+                        <i class="bi bi-film text-white" style="font-size:3rem;"></i>
+                    </div>
+                    {% endif %}
+                    <div class="movie-rating-badge">
+                        {% if movie.rating %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-star-fill"></i> {{ movie.rating }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if movie.trailer_url %}
+                    <div class="movie-trailer-badge">
+                        <span class="badge bg-danger">
+                            <i class="bi bi-play-circle-fill"></i> 预告片
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-truncate" title="{{ movie.title }}">{{ movie.title }}</h5>
+                    {% if movie.category %}
+                    <span class="badge bg-info mb-2 align-self-start">{{ movie.category.name }}</span>
+                    {% endif %}
+                    <p class="card-text small text-muted flex-grow-1 text-truncate-3">
+                        {{ movie.intro or '暂无简介' }}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                        <small class="text-muted">
+                            {% if movie.release_date %}{{ movie.release_date.strftime('%Y') }}{% endif %}
+                        </small>
+                        <small class="text-muted">
+                            <i class="bi bi-hand-thumbs-up"></i> {{ movie.likes }}
+                            <i class="bi bi-chat-dots ms-2"></i> {{ movie.comments.count() }}
+                        </small>
+                    </div>
+                    <a href="{{ url_for('main.detail', movie_id=movie.id) }}" class="btn btn-outline-primary btn-sm mt-2 w-100">
+                        查看详情
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 分页 -->
+    {{ render_pagination(pagination, 'main.index', category=current_category, keyword=keyword) }}
+
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-emoji-frown display-1"></i>
+        <h4 class="mt-3">暂无影视</h4>
+        {% if keyword %}
+        <p>未找到与「{{ keyword }}」相关的影视，请尝试其他关键词</p>
+        {% else %}
+        <p>管理员还没有添加影视，敬请期待！</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

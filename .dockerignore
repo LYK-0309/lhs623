@@ -1,0 +1,20 @@
+# Docker 构建忽略文件
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+coverage_html
+.env
+*.db
+.git
+.gitignore
+.idea
+.vscode
+tests/
+设计报告.md
+check_movies.py
+update_posters*.py
+capture_screenshots.py
+convert_doc.ps1
+gen_*.py
+report_images/

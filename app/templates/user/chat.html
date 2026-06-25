@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}与 {{ friend.nickname }} 聊天 - 影视影评分享系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- 顶部导航 -->
+            <div class="d-flex align-items-center mb-3">
+                <a href="{{ url_for('user.friends') }}" class="btn btn-outline-secondary btn-sm me-3">
+                    <i class="bi bi-arrow-left"></i> 返回好友列表
+                </a>
+                <div class="d-flex align-items-center">
+                    {% if friend.avatar_url %}
+                    <img src="{{ friend.avatar_url }}" class="rounded-circle me-2" style="width:40px;height:40px;object-fit:cover;">
+                    {% else %}
+                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width:40px;height:40px;">
+                        <i class="bi bi-person-fill text-white"></i>
+                    </div>
+                    {% endif %}
+                    <h5 class="mb-0">{{ friend.nickname }}</h5>
+                </div>
+            </div>
+
+            <!-- 聊天区域 -->
+            <div class="card shadow">
+                <div class="card-body d-flex flex-column" style="height: 60vh;">
+                    <!-- 消息列表 -->
+                    <div id="messageList" class="flex-grow-1 overflow-auto mb-3 p-2" style="border:1px solid #eee; border-radius:8px; background:#fafafa;">
+                        <div class="text-center text-muted py-3">加载中...</div>
+                    </div>
+
+                    <!-- 输入区域 -->
+                    <div class="input-group">
+                        <button class="btn btn-outline-info" id="shareMovieBtn" title="分享影视">
+                            <i class="bi bi-film"></i> 分享影视
+                        </button>
+                        <input type="text" class="form-control" id="messageInput" placeholder="输入消息..." maxlength="500">
+                        <button class="btn btn-primary" id="sendBtn">
+                            <i class="bi bi-send"></i> 发送
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- 分享影视 Modal -->
+<div class="modal fade" id="shareMovieModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-film"></i> 分享影视给 {{ friend.nickname }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="movieSearchInput" placeholder="搜索影视名称或主演...">
+                    <button class="btn btn-outline-info" id="movieSearchBtn">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                </div>
+                <div id="movieSearchResults" class="row g-2" style="max-height:400px;overflow-y:auto;">
+                    <div class="col-12 text-center text-muted py-3">输入关键词搜索，或直接查看全部影视</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+    var friendId = {{ friend.id }};
+    var messageList = $('#messageList');
+    var messageInput = $('#messageInput');
+    var sendBtn = $('#sendBtn');
+    var isLoading = false;
+
+    // 加载消息
+    function loadMessages() {
+        $.get('{{ url_for("user.get_messages", friend_id=friend.id) }}', function(data) {
+            if (!data.success) return;
+            var html = '';
+            if (data.messages.length === 0) {
+                html = '<div class="text-center text-muted py-5">还没有消息，开始聊天吧！</div>';
+            } else {
+                data.messages.forEach(function(m) {
+                    var align = m.is_me ? 'text-end' : 'text-start';
+                    var bg = m.is_me ? 'bg-primary text-white' : 'bg-light';
+
+                    // 处理分享消息
+                    var contentHtml = '';
+                    if (m.message_type === 'share_movie' && m.related_movie_id) {
+                        contentHtml = '<div class="mb-1">' + escapeHtml(m.content) + '</div>' +
+                            '<a href="/movie/' + m.related_movie_id + '" target="_blank" ' +
+                            'class="btn btn-sm btn-light mt-1" style="border-radius:8px;font-size:12px;">' +
+                            '<i class="bi bi-film"></i> 查看影视详情</a>';
+                    } else {
+                        contentHtml = escapeHtml(m.content);
+                    }
+
+                    html += '<div class="mb-2 ' + align + '">' +
+                        '<div class="d-inline-block ' + bg + '" style="padding:8px 12px; border-radius:12px; max-width:80%; word-break:break-word;">' +
+                        contentHtml + '</div>' +
+                        '<div class="small text-muted mt-1">' + m.created_at + '</div>' +
+                        '</div>';
+                });
+            }
+            messageList.html(html);
+            messageList.scrollTop(messageList[0].scrollHeight);
+        });
+    }
+
+    // 发送消息
+    function sendMessage() {
+        var content = messageInput.val().trim();
+        if (!content || isLoading) return;
+        isLoading = true;
+        sendBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+        $.ajax({
+            url: '{{ url_for("user.send_message", friend_id=friend.id) }}',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ content: content }),
+            success: function(data) {
+                if (data.success) {
+                    messageInput.val('');
+                    loadMessages();
+                } else {
+                    alert(data.message || '发送失败');
+                }
+                isLoading = false;
+                sendBtn.prop('disabled', false).html('<i class="bi bi-send"></i> 发送');
+            },
+            error: function() {
+                alert('网络错误');
+                isLoading = false;
+                sendBtn.prop('disabled', false).html('<i class="bi bi-send"></i> 发送');
+            }
+        });
+    }
+
+    sendBtn.click(sendMessage);
+    messageInput.on('keypress', function(e) {
+        if (e.which === 13 && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // ========== 分享影视 Modal 逻辑 ==========
+
+    // 打开 Modal 时自动加载影视列表
+    $('#shareMovieBtn').click(function() {
+        $('#shareMovieModal').modal('show');
+        doMovieSearch(''); // 默认加载全部
+    });
+
+    // 搜索影视
+    function doMovieSearch(keyword) {
+        var resultsDiv = $('#movieSearchResults');
+        resultsDiv.html('<div class="col-12 text-center py-4"><div class="spinner-border text-info"></div><p class="mt-2 text-muted">搜索中...</p></div>');
+        $.get('/api/movies/search', { q: keyword }, function(data) {
+            if (!data.success || data.movies.length === 0) {
+                resultsDiv.html('<div class="col-12 text-center text-muted py-4">未找到匹配的影视</div>');
+                return;
+            }
+            var html = '';
+            data.movies.forEach(function(m) {
+                var posterHtml = m.poster_url
+                    ? '<img src="' + m.poster_url + '" class="rounded" style="width:60px;height:80px;object-fit:cover;">'
+                    : '<div class="rounded bg-secondary d-flex align-items-center justify-content-center" style="width:60px;height:80px;"><i class="bi bi-film text-white" style="font-size:1.5rem;"></i></div>';
+
+                html += '<div class="col-md-6">' +
+                    '<div class="card h-100 movie-share-card" style="cursor:pointer;" data-id="' + m.id + '" data-title="' + escapeAttr(m.title) + '">' +
+                    '<div class="card-body d-flex align-items-center p-2">' +
+                    posterHtml +
+                    '<div class="ms-3 flex-grow-1" style="min-width:0;">' +
+                    '<div class="fw-bold text-truncate">' + escapeHtml(m.title) + '</div>' +
+                    '<div class="text-muted small">' + (m.category_name ? '<span class="badge bg-secondary me-1">' + escapeHtml(m.category_name) + '</span>' : '') +
+                    '<i class="bi bi-star-fill text-warning"></i> ' + m.rating + '</div>' +
+                    (m.intro ? '<div class="text-muted small text-truncate">' + escapeHtml(m.intro) + '</div>' : '') +
+                    '</div>' +
+                    '<div class="ms-2 text-info"><i class="bi bi-send"></i></div>' +
+                    '</div></div></div>';
+            });
+            resultsDiv.html(html);
+        }).fail(function() {
+            resultsDiv.html('<div class="col-12 text-center text-danger py-4">搜索失败，请重试</div>');
+        });
+    }
+
+    $('#movieSearchBtn').click(function() {
+        doMovieSearch($('#movieSearchInput').val().trim());
+    });
+    $('#movieSearchInput').on('keypress', function(e) {
+        if (e.which === 13) doMovieSearch($(this).val().trim());
+    });
+
+    // 点击影视卡片分享
+    $(document).on('click', '.movie-share-card', function() {
+        var card = $(this);
+        var movieId = card.data('id');
+        var movieTitle = card.data('title');
+        if (!confirm('确定分享《' + movieTitle + '》给 {{ friend.nickname }} 吗？')) return;
+
+        card.css('opacity', '0.5');
+        $.ajax({
+            url: '{{ url_for("user.share_movie_to_friend", friend_id=friend.id) }}',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ movie_id: movieId }),
+            success: function(data) {
+                if (data.success) {
+                    $('#shareMovieModal').modal('hide');
+                    loadMessages();
+                } else {
+                    alert(data.message || '分享失败');
+                }
+                card.css('opacity', '1');
+            },
+            error: function() {
+                alert('网络错误，分享失败');
+                card.css('opacity', '1');
+            }
+        });
+    });
+
+    // 定时刷新消息
+    loadMessages();
+    setInterval(loadMessages, 3000);
+
+    // HTML 转义
+    function escapeHtml(str) {
+        return $('<div>').text(str).html();
+    }
+    function escapeAttr(str) {
+        return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+});
+</script>
+{% endblock %}
