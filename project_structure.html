@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>影视影评分享系统 - 项目结构图</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: #ffffff;
+    color: #1e293b;
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+.container { max-width: 960px; margin: 0 auto; }
+h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.subtitle {
+    text-align: center;
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 36px;
+}
+.tree {
+    font-size: 13.5px;
+    line-height: 1.55;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 32px 36px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Microsoft YaHei', monospace;
+    white-space: pre;
+    overflow-x: auto;
+    color: #334155;
+}
+.folder { color: #2563eb; font-weight: 700; }
+.file { color: #334155; }
+.ext-py { color: #ca8a04; }
+.ext-html { color: #ea580c; }
+.ext-css { color: #0284c7; }
+.ext-js { color: #d97706; }
+.ext-sql { color: #7c3aed; }
+.ext-db, .ext-docx, .ext-md, .ext-txt { color: #64748b; }
+.comment { color: #94a3b8; font-style: italic; }
+.badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 6px;
+}
+.badge-blue { background: rgba(37,99,235,0.1); color: #2563eb; }
+.badge-yellow { background: rgba(202,138,4,0.1); color: #ca8a04; }
+.badge-green { background: rgba(22,163,74,0.1); color: #16a34a; }
+.badge-orange { background: rgba(234,88,12,0.1); color: #ea580c; }
+.badge-purple { background: rgba(124,58,237,0.1); color: #7c3aed; }
+.legend {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 28px;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #64748b;
+}
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+.stats {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+.stat {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px 22px;
+    text-align: center;
+    min-width: 100px;
+}
+.stat-num { font-size: 28px; font-weight: 700; color: #2563eb; }
+.stat-label { font-size: 12px; color: #64748b; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>🎬 影视影评分享系统</h1>
+    <p class="subtitle">Flask 项目文件结构 — 蓝图组织 · 工厂函数 · 7表数据库</p>
+
+    <div class="stats">
+        <div class="stat"><div class="stat-num">15</div><div class="stat-label">Python 源文件</div></div>
+        <div class="stat"><div class="stat-num">20</div><div class="stat-label">HTML 模板</div></div>
+        <div class="stat"><div class="stat-num">7</div><div class="stat-label">数据库表</div></div>
+        <div class="stat"><div class="stat-num">3</div><div class="stat-label">蓝图模块</div></div>
+        <div class="stat"><div class="stat-num">91</div><div class="stat-label">单元测试</div></div>
+    </div>
+
+    <div class="tree" style="margin-top:28px;">
+<span class="folder">movie_review1/</span>                              <span class="comment">项目根目录</span>
+│
+├── <span class="file ext-py">run.py</span>                                <span class="comment">应用启动入口</span>
+├── <span class="file ext-py">wsgi.py</span>                               <span class="comment">WSGI 入口（生产环境）</span>
+├── <span class="file ext-txt">requirements.txt</span>                      <span class="comment">Python 依赖清单 </span><span class="badge badge-blue">Flask 3.0</span><span class="badge badge-blue">gunicorn</span>
+├── <span class="file">Procfile</span>                              <span class="comment">Render 部署配置</span>
+├── <span class="file">runtime.txt</span>                           <span class="comment">Python 3.12.0</span>
+├── <span class="file ext-db">movie_review.db</span>                       <span class="comment">SQLite 数据库文件</span>
+│
+├── <span class="folder">app/</span>                                 <span class="comment">应用主包</span>
+│   ├── <span class="file ext-py">__init__.py</span>                       <span class="comment">工厂函数 create_app() · 蓝图注册 · 种子数据</span>
+│   ├── <span class="file ext-py">config.py</span>                         <span class="comment">配置类 (Config / Production / Testing)</span>
+│   ├── <span class="file ext-py">extensions.py</span>                      <span class="comment">扩展实例 (db, csrf, login_manager)</span>
+│   ├── <span class="file ext-py">models.py</span>                         <span class="comment">数据模型 </span><span class="badge badge-yellow">7表</span><span class="badge badge-green">User</span><span class="badge badge-green">Admin</span><span class="badge badge-green">Category</span><span class="badge badge-green">Movie</span><span class="badge badge-green">Comment</span><span class="badge badge-green">Friendship</span><span class="badge badge-green">Message</span>
+│   ├── <span class="file ext-py">forms.py</span>                          <span class="comment">全局表单定义</span>
+│   │
+│   ├── <span class="folder">admin/</span>                            <span class="comment">管理员蓝图 /admin</span>
+│   │   └── <span class="file ext-py">views.py</span>                       <span class="comment">仪表盘 · 影视CRUD · 分类管理 · 评论管理 · 修改密码</span>
+│   │
+│   ├── <span class="folder">main/</span>                             <span class="comment">主站蓝图 /</span>
+│   │   └── <span class="file ext-py">views.py</span>                       <span class="comment">首页 · 详情 · 搜索 · 分类筛选 · 点赞 · 评论</span>
+│   │
+│   ├── <span class="folder">user/</span>                             <span class="comment">用户蓝图 /user</span>
+│   │   ├── <span class="file ext-py">views.py</span>                       <span class="comment">注册 · 登录 · 个人中心 · 好友管理 · 聊天 · 分享 · 注销</span>
+│   │   └── <span class="file ext-py">forms.py</span>                       <span class="comment">用户表单验证</span>
+│   │
+│   ├── <span class="folder">utils/</span>                            <span class="comment">工具模块</span>
+│   │   ├── <span class="file ext-py">email.py</span>                       <span class="comment">QQ邮箱验证码发送</span>
+│   │   └── <span class="file ext-py">time.py</span>                        <span class="comment">时间格式化</span>
+│   │
+│   ├── <span class="folder">templates/</span>                        <span class="comment">Jinja2 模板 </span><span class="badge badge-orange">20个</span>
+│   │   ├── <span class="file ext-html">base.html</span>                        <span class="comment">基础布局（导航栏 · 搜索 · 页脚）</span>
+│   │   ├── <span class="folder">admin/</span>                            <span class="badge badge-orange">6个</span>
+│   │   ├── <span class="folder">main/</span>                             <span class="badge badge-orange">5个</span>
+│   │   └── <span class="folder">user/</span>                             <span class="badge badge-orange">8个</span>
+│   │
+│   └── <span class="folder">static/</span>                           <span class="comment">静态资源</span>
+│       ├── <span class="file ext-css">css/style.css</span>
+│       ├── <span class="file ext-js">js/main.js</span>
+│       └── <span class="folder">uploads/posters/</span>                <span class="comment">30张AI海报 </span><span class="badge badge-purple">PNG</span>
+│
+├── <span class="folder">tests/</span>                               <span class="comment">单元测试 </span><span class="badge badge-green">91个</span><span class="badge badge-blue">覆盖率≥80%</span>
+│   ├── <span class="file ext-py">test_models.py</span>
+│   ├── <span class="file ext-py">test_forms.py</span>
+│   └── <span class="file ext-py">test_views.py</span>
+│
+├── <span class="file ext-sql">migrations.sql</span>                        <span class="comment">数据库迁移脚本</span>
+├── <span class="file ext-py">seed_movies.py</span>                       <span class="comment">影视种子数据（30部）</span>
+├── <span class="file ext-py">generate_posters.py</span>                   <span class="comment">海报生成工具</span>
+├── <span class="file">Dockerfile</span>                            <span class="comment">Docker 容器化配置</span>
+└── <span class="file ext-md">README.md</span>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#facc15;"></div> Python</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fb923c;"></div> HTML 模板</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#38bdf8;"></div> CSS</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fbbf24;"></div> JavaScript</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#60a5fa;"></div> 目录/配置文件</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#a78bfa;"></div> 数据库/图片</div>
+    </div>
+</div>
+</body>
+</html>
